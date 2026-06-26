@@ -1,7 +1,7 @@
 {
   "name": "galaxia-ads",
-  "description": "Ads analysis and operations for Claude Code, layered around an attribution source of truth. Wires the official Google BigQuery MCP for deep ad-hoc SQL over an all-accounts ads warehouse (Google Ads + Meta + TikTok), adds analysis skills, an escalation skill (attribution product first, BigQuery for what it cannot answer), and thin write/ops wrappers over the official provider MCPs (Meta, Google Ads, TikTok). Does NOT recompute ROAS/attribution: that stays in the dedicated attribution layer (e.g. Metrikia MCP).",
-  "version": "0.1.0",
+  "description": "Ads orchestration for Claude Code around an attribution source of truth. Routes ad questions to the right layer: the Metrikia MCP for attributed ROAS/MER (the brain, wired by default), official provider MCPs (Meta, Google Ads, TikTok, or unified Pipeboard) for cross-platform reads and write/ops, and an OPTIONAL BigQuery MCP for arbitrary historical cross-platform SQL when a warehouse exists. Never recomputes attribution: that stays in Metrikia.",
+  "version": "0.2.0",
   "author": {
     "name": "Alexandre Mallet",
     "email": "alexandre.mallet@buldee.com"

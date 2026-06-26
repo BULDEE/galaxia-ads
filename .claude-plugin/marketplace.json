@@ -1,25 +1,25 @@
 {
   "name": "galaxia-ads",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "owner": {
     "name": "Alexandre Mallet",
     "email": "contact@buldee.com"
   },
   "metadata": {
-    "description": "Ads analysis and operations layered around an attribution source of truth: BigQuery deep-SQL warehouse + provider write-ops, with the attribution layer (Metrikia MCP) as the brain."
+    "description": "Ads orchestration around an attribution source of truth: Metrikia MCP as the brain, provider MCPs for reads/ops, BigQuery as an optional deep-SQL escape hatch."
   },
   "plugins": [
     {
       "name": "galaxia-ads",
-      "version": "0.1.0",
-      "description": "BigQuery MCP wiring for an all-accounts ads warehouse, SQL analysis skills, an escalation skill (attribution first, BigQuery for the rest), and thin write/ops wrappers over the official Meta / Google Ads / TikTok MCPs.",
+      "version": "0.2.0",
+      "description": "Routes ad questions: Metrikia MCP for attributed ROAS (wired by default), provider MCPs (Meta/Google/TikTok/Pipeboard) for cross-platform reads and write-ops, optional BigQuery MCP for arbitrary historical SQL. Includes routing, ops-guardrail and warehouse-setup skills.",
       "author": {
         "name": "Alexandre Mallet",
         "email": "alexandre.mallet@buldee.com"
       },
       "source": "./",
       "category": "analytics",
-      "tags": ["ads", "bigquery", "media-buying", "roas", "google-ads", "meta-ads", "tiktok-ads", "mcp"]
+      "tags": ["ads", "metrikia", "attribution", "bigquery", "media-buying", "google-ads", "meta-ads", "tiktok-ads", "mcp"]
     }
   ]
 }

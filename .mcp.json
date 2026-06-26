@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "metrikia": {
+      "type": "http",
+      "url": "https://mcp.metrikia.io/api/v1/mcp"
+    },
     "bigquery": {
       "type": "http",
       "url": "https://bigquery.googleapis.com/mcp"

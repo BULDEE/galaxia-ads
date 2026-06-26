@@ -1,51 +1,60 @@
 # galaxia-ads
 
-Claude Code plugin for ad analysis and operations, layered around an attribution source of truth.
+Claude Code plugin for ad analysis and operations, orchestrated around an attribution source of truth.
 
-## The idea: layer, do not duplicate
+## Why this exists (the honest version)
 
-As of 2026, Google, Meta and TikTok all ship official MCP servers, and BigQuery has an official MCP. That does not mean an agent should hit raw platform APIs to compute performance. Performance attribution is the hardest, highest-value problem, and it belongs in a dedicated attribution layer. This plugin sits around that layer, covering the two things attribution products do not: deep ad-hoc SQL, and write/ops.
+As of 2026 every platform ships an official MCP (Meta, Google Ads, TikTok), and BigQuery has an official MCP. So why a plugin? Because the provider MCPs are walled gardens with self-reported, last-click numbers that cannot join across platforms. They leave two gaps:
+
+1. **Attributed business truth** (real ROAS / MER via MTA + CRM): filled by the **Metrikia MCP**.
+2. **Arbitrary cross-platform analysis**: filled by a unified provider MCP (reads) or BigQuery (full historical SQL).
+
+This plugin is the **router and orchestration** around those layers. It does not re-implement attribution, and it does not make BigQuery the centerpiece.
+
+## The stack
 
 ```
-Attribution (source of truth)   ->  Metrikia MCP
+Metrikia MCP        ->  the brain, wired by default (.mcp.json)
   "true ROAS / MER / which campaign actually drove revenue"
-  MTA + CRM attributed, pre-modeled, the hot path. Not in this plugin.
+  MTA + CRM attributed. The default answer for performance questions.
 
-Deep / ad-hoc analysis          ->  BigQuery MCP (this plugin)
-  "any granular SQL across all accounts joined, on history"
-  Raw warehouse, full SQL. Native DTS for Google + Meta (free), Windsor.ai for TikTok.
+Provider MCPs       ->  reads + write/ops
+  Meta / Google Ads / TikTok official, or unified Pipeboard (one auth, cross-platform).
+  Live platform state and actions. Numbers are self-reported (sanity check, not truth).
 
-Write / ops                     ->  Provider MCPs (this plugin)
-  "pause / scale / create (lands PAUSED)"
-  Meta / Google Ads / TikTok official MCPs, per-account OAuth.
+BigQuery MCP        ->  OPTIONAL deep-SQL escape hatch
+  Only when a question needs arbitrary cross-platform/historical SQL the Metrikia schema
+  cannot express, and only if an ads warehouse is set up. Not required for most use.
 ```
 
-The plugin **never recomputes ROAS or attribution**. That stays in the attribution layer (Metrikia MCP). Re-deriving it from raw BigQuery rows would use un-attributed platform numbers and contradict the source of truth.
+The plugin **never recomputes ROAS or attribution**. That stays in Metrikia. Re-deriving it from raw BigQuery rows would use un-attributed platform numbers and contradict the source of truth.
 
 ## Skills
 
 | Skill | Role |
 |-------|------|
-| `ads-warehouse-setup` | One-time setup: BigQuery dataset, native DTS connectors (Google + Meta, free), TikTok pipe, service account, BigQuery MCP wiring. |
-| `ads-analysis` | Deep ad-hoc SQL over the ads warehouse, with an explicit escalation rule (attribution layer first, BigQuery only for what it cannot answer). |
-| `ads-ops` | Write/ops over the official provider MCPs (Meta, Google Ads, TikTok), with the PAUSED-by-default guardrail. |
+| `ads-router` | The brain. Routes any ad question to the right layer (Metrikia first, provider for ops/reads, BigQuery only when needed). Read this first. |
+| `ads-ops` | Write/ops over provider MCPs (Meta, Google Ads, TikTok, or unified Pipeboard), with the PAUSED-by-default guardrail. |
+| `ads-analysis` | OPTIONAL: deep ad-hoc SQL over a BigQuery ads warehouse, for what Metrikia and provider reads cannot answer. |
+| `ads-warehouse-setup` | OPTIONAL: one-time setup of the BigQuery warehouse (native DTS for Google + Meta, Windsor.ai for TikTok) and the BigQuery MCP wiring. Only if you need the deep-SQL layer. |
 
-## MCP servers
+## MCP servers (`.mcp.json`)
 
-`.mcp.json` wires the official Google **BigQuery MCP** (managed endpoint `https://bigquery.googleapis.com/mcp`). Claude Code handles the Google OAuth on first use. Provider MCPs (Meta `mcp.facebook.com/ads`, Google Ads, TikTok, or unified Pipeboard) are wired per the `ads-ops` skill as needed.
+- `metrikia` (`https://mcp.metrikia.io/api/v1/mcp`): the attribution brain, wired by default. Claude Code handles OAuth on first use. (If you also run the standalone Metrikia plugin, you only need one.)
+- `bigquery` (`https://bigquery.googleapis.com/mcp`): the optional deep-SQL layer. Harmless if no warehouse exists; the router only reaches for it when needed.
+
+Provider MCPs (Meta `mcp.facebook.com/ads`, Google Ads, TikTok, or unified Pipeboard) are wired per the `ads-ops` skill, since they need per-account OAuth.
 
 ## Requirements
 
-- A Google Cloud project with BigQuery and the Data Transfer API enabled.
-- Ad accounts connected via DTS (Google + Meta) and a TikTok pipe (Windsor.ai or similar).
-- For attributed ROAS: an attribution layer such as the Metrikia MCP (separate, not bundled here).
+- A Metrikia account + MCP access (the attribution brain). Required.
+- A provider MCP for reads/ops (Pipeboard recommended). For actions.
+- BigQuery + a fed ads warehouse. Optional, only for deep SQL.
 
 ## Notes (2026)
 
-- BigQuery MCP queries cap at 3 minutes / 3,000 rows. Aggregate in SQL.
-- Native DTS is daily (24h floor). Platforms restate conversions for 24-72h.
-- Google Ads DTS requires MFA (since May 2026) and caps backfills at 37 months (since June 2026).
-- Provider MCPs are beta: pin versions, expect churn. Created entities land PAUSED.
+- Provider and BigQuery MCPs are beta/preview: pin versions, expect churn. Created entities land PAUSED.
+- BigQuery MCP queries cap at 3 minutes / 3,000 rows. Native DTS is daily (24h floor).
 
 ## License
 
